@@ -152,8 +152,8 @@ var gitblog = function(config) {
         this.page = new Pages();
         this.icons = [];
         this.icon_num = 0;
-        this.content = 'Powered by <a href="https://github.com/imuncle/gitblog" target="_blank" style="color: aquamarine;text-decoration:none;border-bottom: 1px solid #79f8d4;">gitblog</a>';
-    }
+        this.content = 'Powered by <a href="https://space.bilibili.com/3493132937202075" target="_blank" style="color: aquamarine;text-decoration:none;border-bottom: 1px solid #79f8d4;">Albert</a>';
+    }lbert
 
     Footer.prototype = {
         showIcon: function() {
