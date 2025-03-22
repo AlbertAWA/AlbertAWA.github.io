@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图书馆收录系统</title>
+    <!-- 引入 Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .navbar {
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .upload-section, .search-section, .book-list {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .book-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .book-list li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .book-list li:hover {
+            background-color: #f1f1f1;
+        }
+        .book-list li:last-child {
+            border-bottom: none;
+        }
+        .category {
+            font-weight: bold;
+            color: #007BFF;
+        }
+        .btn-custom {
+            margin: 5px;
+        }
+        .preview-modal .modal-content {
+            border-radius: 8px;
+        }
+        .preview-modal .modal-body {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href=" ">图书馆收录系统</a >
+        </div>
+    </nav>
+
+    <div class="upload-section">
+        <h2>上传电子书</h2>
+        <div class="input-group mb-3">
+            <input type="file" class="form-control" id="file-upload" accept=".txt">
+            <button class="btn btn-primary btn-custom" onclick="uploadFile()">上传</button>
+        </div>
+    </div>
+
+    <div class="upload-section">
+        <h2>保存目录</h2>
+        <button class="btn btn-success btn-custom" onclick="saveBooksToFolder()">保存目录</button>
+    </div>
+
+    <div class="upload-section">
+        <h2>指定目录</h2>
+        <input type="file" class="form-control" id="folder-input" webkitdirectory directory multiple>
+        <button class="btn btn-warning btn-custom" onclick="loadBooksFromFolder()">指定目录</button>
+    </div>
+    <div class="search-section">
+        <h2>搜索书籍</h2>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" id="search-input" placeholder="输入关键词或分类标签">
+            <button class="btn btn-primary btn-custom" onclick="searchBooks()">搜索</button>
+        </div>
+    </div>
+
+    <div class="book-list">
+        <h2>书目列表</h2>
+        <ul id="book-ul"></ul>
+    </div>
+
+    <div class="modal fade preview-modal" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="previewModalLabel">书籍预览</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="previewContent">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let books = [];
+
+        function uploadFile() {
+            const fileInput = document.getElementById('file-upload');
+            const file = fileInput.files[0];
+            if (file && file.type === 'text/plain') {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const content = e.target.result;
+                    const category = categorizeBook(content); 
+                    const book = {
+                        name: file.name,
+                        content: content,
+                        category: category
+                    };
+                    books.push(book); 
+                    updateBookList();
+                };
+                reader.readAsText(file);
+            } else {
+                alert('请上传一个txt文件');
+            }
+        }
+
+        function categorizeBook(content) {
+            const keywords = {
+                '恋爱': ['恋爱', '爱情', '甜蜜', '浪漫'],
+                '悬疑': ['悬疑', '推理', '谜团', '侦探'],
+                '科幻': ['科幻', '未来', '外星', '时间旅行'],
+                '历史': ['历史', '古代', '王朝', '战争'],
+                '奇幻': ['奇幻', '魔法', '龙', '巫师'],
+                '恐怖': ['恐怖', '惊悚', '鬼魂', '灵异'],
+                '励志': ['励志', '成功', '奋斗', '梦想'],
+                '教育': ['教育', '学习', '知识', '学校']
+            };
+            for (const [category, words] of Object.entries(keywords)) {
+                if (words.some(word => content.includes(word))) {
+                    return category;
+                }
+            }
+            return '其他';
+        }
+
+        function updateBookList() {
+            const ul = document.getElementById('book-ul');
+            ul.innerHTML = '';
+            books.forEach((book, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="category">${book.category}</span> - ${book.name}`;
+                li.onclick = () => previewBook(book.content);
+                ul.appendChild(li);
+            });
+        }
+
+        function previewBook(content) {
+            const previewContent = document.getElementById('previewContent');
+            previewContent.textContent = content;
+            const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+            previewModal.show();
+        }
+
+        function saveBooksToFolder() {
+            if (books.length === 0) {
+                alert('书目列表为空，请先上传书籍');
+                return;
+            }
+            books.forEach(book => {
+                const blob = new Blob([book.content], { type: 'text/plain' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `${book.category}_${book.name}`; // 文件名加上分类标签
+                link.click();
+            });
+        }
+
+        function loadBooksFromFolder() {
+            const folderInput = document.getElementById('folder-input');
+            const files = folderInput.files;
+            if (files.length === 0) {
+                alert('请选择一个文件夹');
+                return;
+            }
+            books = []; 
+            Array.from(files).forEach(file => {
+                if (file.type === 'text/plain') {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const content = e.target.result;
+                        const category = categorizeBook(content); // 自动分类
+                        const book = {
+                            name: file.name,
+                            content: content,
+                            category: category
+                        };
+                        books.push(book); 
+                        updateBookList(); 
+                    };
+                    reader.readAsText(file);
+                }
+            });
+        }
+
+        function searchBooks() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filteredBooks = books.filter(book =>
+                book.name.toLowerCase().includes(query) ||
+                book.category.toLowerCase().includes(query)
+            );
+            const ul = document.getElementById('book-ul');
+            ul.innerHTML = '';
+            filteredBooks.forEach(book => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="category">${book.category}</span> - ${book.name}`;
+                li.onclick = () => previewBook(book.content); 
+                ul.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
